@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nmaprun scanner="nmap" args="nmap -sV -T4 192.168.1.10 192.168.1.20" start="1762700000" version="7.95">
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.10" addrtype="ipv4"/>
+    <address addr="AA:BB:CC:DD:EE:FF" addrtype="mac" vendor="Raspberry Pi"/>
+    <hostnames><hostname name="servidor.local" type="PTR"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="22">
+        <state state="open" reason="syn-ack"/>
+        <service name="ssh" product="OpenSSH" version="9.2p1" extrainfo="Debian"/>
+      </port>
+      <port protocol="tcp" portid="443">
+        <state state="open" reason="syn-ack"/>
+        <service name="https" product="nginx" version="1.24"/>
+        <script id="http-title" output="Panel &lt;admin&gt;"/>
+      </port>
+      <port protocol="tcp" portid="80">
+        <state state="closed" reason="reset"/>
+        <service name="http"/>
+      </port>
+    </ports>
+    <os><osmatch name="Linux 5.X" accuracy="96"/></os>
+  </host>
+  <host>
+    <status state="up" reason="echo-reply"/>
+    <address addr="192.168.1.20" addrtype="ipv4"/>
+    <ports>
+      <port protocol="udp" portid="53">
+        <state state="open|filtered" reason="no-response"/>
+        <service name="domain"/>
+      </port>
+    </ports>
+  </host>
+  <runstats>
+    <finished time="1762700012" elapsed="12.34" summary="Nmap done: 2 IP addresses (2 hosts up) scanned in 12.34 seconds"/>
+    <hosts up="2" down="0" total="2"/>
+  </runstats>
+</nmaprun>
