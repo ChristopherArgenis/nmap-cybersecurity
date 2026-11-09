@@ -94,6 +94,12 @@ tests/                  pruebas con pytest
 - Comparar dos escaneos del historial (puertos nuevos o cerrados).
 - Topología de red visual y perfiles guardados por el usuario.
 
+## Cómo se hizo
+
+Este proyecto se desarrolló con ayuda de IA ([Claude Code](https://claude.com/claude-code))
+como asistente de programación. La idea, las decisiones de diseño, las pruebas y el
+mantenimiento son de su autor.
+
 ## Licencia
 
 Distribuido bajo la [licencia MIT](LICENSE): puedes usar, copiar, modificar y
