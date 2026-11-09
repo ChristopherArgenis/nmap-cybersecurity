@@ -59,9 +59,12 @@ def test_runner_cancel(app, fake_nmap):
 
 def test_runner_missing_binary(app):
     runner = ScanRunner()
+    errors = []
+    runner.failed.connect(errors.append)  # en Windows la señal llega dentro de start()
     runner.start("/no/existe/nmap", ["h"])
-    (msg,) = wait_for(runner.failed)
-    assert "nmap" in msg
+    if not errors:
+        wait_for(runner.failed)
+    assert errors and "nmap" in errors[0]
 
 
 def test_main_window_full_flow(app, fake_nmap, tmp_path, monkeypatch):

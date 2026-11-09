@@ -3,6 +3,20 @@
 Aplicación de escritorio para correr comandos de **nmap** desde una interfaz gráfica.
 Hecha con Python 3.10+ y PySide6 (Qt). Funciona en Windows, Linux y macOS.
 
+Hay **dos versiones** con las mismas funciones y la misma lógica (`nmap_gui/core`):
+
+| Versión | Paquete | Estilo | Ejecutar |
+|---|---|---|---|
+| 1 · Clásica | `nmap_gui` | Ventana de escritorio tradicional (menús, pestañas) | `python -m nmap_gui` |
+| 2 · Moderna (NMAP Studio) | `nmap_gui_v2` | Barra lateral, tarjetas, modo oscuro/claro | `python -m nmap_gui_v2` |
+
+## Descargar el .exe (Windows)
+
+Ve a **[Releases](https://github.com/ChristopherArgenis/nmap-cybersecurity/releases)**,
+descarga `NMAP-GUI-v1.exe` o `NMAP-GUI-v2.exe` y ábrelo con doble clic (no necesita Python).
+Solo necesitas tener [nmap para Windows](https://nmap.org/download.html) instalado.
+Los .exe se compilan solos con GitHub Actions (`.github/workflows/build-windows.yml`).
+
 > ⚠️ **Uso responsable.** Escanea solo redes y equipos propios o donde tengas
 > permiso explícito. Escanear redes ajenas (por ejemplo, la red de una escuela
 > o empresa) sin autorización puede ser ilegal.
@@ -60,7 +74,9 @@ nmap_gui/
     parser.py           XML de nmap → objetos Host / Port
     history.py          historial en SQLite
     exporter.py         TXT / XML / CSV / HTML
-  ui/                   ventanas y paneles PySide6
+  ui/                   ventanas y paneles PySide6 (versión 1)
+nmap_gui_v2/            versión 2: tema, iconos, componentes y páginas
+packaging/              entradas para PyInstaller e icono
 tests/                  pruebas con pytest
 ```
 
@@ -74,6 +90,6 @@ tests/                  pruebas con pytest
 
 ## Próximos pasos
 
-- Empaquetar como ejecutable con PyInstaller (`.exe` / AppImage / `.app`).
+- Empaquetar también para Linux (AppImage) y macOS (`.app`).
 - Comparar dos escaneos del historial (puertos nuevos o cerrados).
 - Topología de red visual y perfiles guardados por el usuario.
