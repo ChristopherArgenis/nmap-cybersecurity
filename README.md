@@ -93,3 +93,11 @@ tests/                  pruebas con pytest
 - Empaquetar también para Linux (AppImage) y macOS (`.app`).
 - Comparar dos escaneos del historial (puertos nuevos o cerrados).
 - Topología de red visual y perfiles guardados por el usuario.
+
+## Licencia
+
+Distribuido bajo la [licencia MIT](LICENSE): puedes usar, copiar, modificar y
+compartir este proyecto libremente, manteniendo el aviso de copyright.
+
+nmap es un programa aparte con su propia licencia (<https://nmap.org/npsl/>);
+esta aplicación no lo incluye, solo lo ejecuta si está instalado.
