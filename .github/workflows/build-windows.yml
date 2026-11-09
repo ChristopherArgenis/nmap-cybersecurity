@@ -1,0 +1,74 @@
+name: Compilar .exe para Windows
+
+on:
+  push:
+    branches: [claude/awesome-carson-goh3tt, main]
+    paths:
+      - "nmap_gui/**"
+      - "nmap_gui_v2/**"
+      - "packaging/**"
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install PySide6-Essentials pyinstaller pytest
+
+      - name: Pruebas (sin red)
+        run: pytest -q
+
+      - name: Compilar versión 1 (clásica)
+        run: >
+          pyinstaller --noconfirm --onefile --windowed
+          --name "NMAP-GUI-v1"
+          --icon packaging/icon.ico
+          --paths .
+          packaging/run_v1.py
+
+      - name: Compilar versión 2 (moderna)
+        if: hashFiles('packaging/run_v2.py') != ''
+        run: >
+          pyinstaller --noconfirm --onefile --windowed
+          --name "NMAP-GUI-v2"
+          --icon packaging/icon.ico
+          --paths .
+          packaging/run_v2.py
+
+      - name: Guardar como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: NMAP-GUI-windows
+          path: dist/*.exe
+
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: NMAP GUI para Windows (compilación ${{ github.run_number }})
+          body: |
+            Descarga el .exe y ábrelo con doble clic. No necesita Python.
+
+            **Requisito:** instalar nmap para Windows desde https://nmap.org/download.html
+            (el instalador incluye Npcap). La app detecta nmap automáticamente.
+
+            - `NMAP-GUI-v1.exe`: versión clásica.
+            - `NMAP-GUI-v2.exe`: versión moderna (si está incluida).
+
+            Windows puede mostrar "Windows protegió su PC" porque el .exe no está firmado:
+            pulsa **Más información → Ejecutar de todas formas**.
+          files: dist/*.exe
