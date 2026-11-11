@@ -33,6 +33,16 @@ Los .exe se compilan solos con GitHub Actions (`.github/workflows/build-windows.
   filtro de texto, opción *Solo abiertos* y panel de detalle (SO, MAC, scripts).
 - **Historial**: cada escaneo se guarda en SQLite. Puedes abrirlo, repetirlo o borrarlo.
 - **Exportar**: TXT, XML de nmap, CSV e informe HTML (Archivo → Exportar).
+- **Topología** (versión 2): mapa de la red deducido del escaneo, con zonas
+  (infraestructura, equipos, IoT, fuera de la red local), colores por riesgo,
+  zoom, detalle de cada equipo y exportación a PNG.
+- **Modelo OSI** (versión 2): protocolos y hallazgos de tu red ordenados en las
+  7 capas, con explicaciones (modo aprendizaje) y un botón que prepara el escaneo
+  recomendado para investigar cada capa.
+
+> Para un mapa y un análisis más completos, usa el perfil *Escaneo intenso* (`-A`):
+> añade detección de sistema operativo, versiones y `--traceroute`. Los hallazgos
+> son orientativos y se deducen de lo que nmap reporta.
   También puedes abrir un XML generado por nmap en otro lugar (Archivo → Abrir).
 
 ## Requisitos
@@ -76,6 +86,7 @@ nmap_gui/
     exporter.py         TXT / XML / CSV / HTML
   ui/                   ventanas y paneles PySide6 (versión 1)
 nmap_gui_v2/            versión 2: tema, iconos, componentes y páginas
+  core/                 hallazgos, topología y modelo OSI (sin interfaz)
 packaging/              entradas para PyInstaller e icono
 tests/                  pruebas con pytest
 ```

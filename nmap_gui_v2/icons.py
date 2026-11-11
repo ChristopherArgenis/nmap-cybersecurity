@@ -23,6 +23,11 @@ _PATHS = {
               "<path d='M21 12v2a4 4 0 0 1-4 4H3'/>",
     "chevron": "<path d='M9 6l6 6-6 6'/>",
     "shield": "<path d='M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z'/>",
+    "topology": "<circle cx='12' cy='5' r='2.5'/><circle cx='5' cy='19' r='2.5'/><circle cx='19' cy='19' r='2.5'/>"
+                "<path d='M12 7.5v4M12 11.5L6.5 17M12 11.5l5.5 5.5'/>",
+    "layers": "<path d='M12 3l9 5-9 5-9-5z'/><path d='M3 13l9 5 9-5'/><path d='M3 17.5l9 5 9-5' opacity='.5'/>",
+    "fit": "<path d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'/>",
+    "image": "<rect x='3' y='4' width='18' height='16' rx='2'/><circle cx='9' cy='10' r='2'/><path d='M21 17l-5-5-8 8'/>",
     "host": "<rect x='3' y='4' width='18' height='12' rx='2'/><path d='M8 20h8M12 16v4'/>",
 }
 

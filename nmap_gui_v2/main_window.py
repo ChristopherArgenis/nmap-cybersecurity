@@ -31,10 +31,14 @@ from nmap_gui.core.scanner import ScanRunner, find_nmap, is_admin
 
 from . import __version__
 from .icons import icon
+from .core.analysis import Analysis, analyze_scan
+from .core.osi import suggested_options
 from .pages.history_page import HistoryPage
+from .pages.osi_page import OsiPage
 from .pages.results_page import ResultsPage
 from .pages.scan_page import ScanPage
 from .pages.settings_page import SettingsPage
+from .pages.topology_page import TopologyPage
 from .theme import color, stylesheet
 from .widgets import ToggleSwitch
 
@@ -48,6 +52,8 @@ DISCLAIMER = (
 NAV = [
     ("scan", "Escanear", "radar"),
     ("results", "Resultados", "results"),
+    ("topology", "Topología", "topology"),
+    ("osi", "Modelo OSI", "layers"),
     ("history", "Historial", "history"),
     ("settings", "Ajustes", "settings"),
 ]
@@ -69,6 +75,7 @@ class ModernWindow(QMainWindow):
         self.runner = ScanRunner(self)
         self._current: dict = {}
         self._last: dict = {}
+        self.analysis = Analysis()
 
         self._build()
         self._connect()
@@ -125,11 +132,15 @@ class ModernWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.scan_page = ScanPage()
         self.results_page = ResultsPage(self.theme)
+        self.topology_page = TopologyPage(self.theme)
+        self.osi_page = OsiPage(self.theme)
         self.history_page = HistoryPage(self.history)
         self.settings_page = SettingsPage()
         self.pages = {
             "scan": self.scan_page,
             "results": self.results_page,
+            "topology": self.topology_page,
+            "osi": self.osi_page,
             "history": self.history_page,
             "settings": self.settings_page,
         }
@@ -169,7 +180,13 @@ class ModernWindow(QMainWindow):
 
         QShortcut(QKeySequence("Ctrl+1"), self, lambda: self.go("scan"))
         QShortcut(QKeySequence("Ctrl+2"), self, lambda: self.go("results"))
-        QShortcut(QKeySequence("Ctrl+3"), self, lambda: self.go("history"))
+        QShortcut(QKeySequence("Ctrl+3"), self, lambda: self.go("topology"))
+        QShortcut(QKeySequence("Ctrl+4"), self, lambda: self.go("osi"))
+        QShortcut(QKeySequence("Ctrl+5"), self, lambda: self.go("history"))
+
+        self.topology_page.scan_host.connect(self._scan_host)
+        self.topology_page.show_osi.connect(self._osi_for_host)
+        self.osi_page.investigate.connect(self._investigate_layer)
         QShortcut(QKeySequence("Ctrl+E"), self, self.export)
 
     def go(self, key: str) -> None:
@@ -193,6 +210,8 @@ class ModernWindow(QMainWindow):
         for sw in self.findChildren(ToggleSwitch):
             sw.set_colors(accent, color(theme, "border"), color(theme, "text"), muted)
         self.results_page.apply_theme(theme)
+        self.topology_page.apply_theme(theme)
+        self.osi_page.apply_theme(theme)
         st = self.settings_page.dark
         st.blockSignals(True)
         st.setChecked(theme == "oscuro")
@@ -268,7 +287,7 @@ class ModernWindow(QMainWindow):
         self._refresh_nmap_status()
         full_text = f"$ {self._current.get('command', '')}\n\n{text}"
         self._last = {"result": result, "text": full_text, "xml": xml}
-        self.results_page.set_result(result, exportable=True)
+        self.show_result(result, xml)
         open_ports = sum(len(h.open_ports) for h in result.hosts) if result else 0
         if self._current:
             self.history.add(
@@ -292,6 +311,30 @@ class ModernWindow(QMainWindow):
             if result and result.hosts:
                 self.go("results")
 
+    # --------------------------------------------- topología y modelo OSI
+    def show_result(self, result: ScanResult | None, xml: str) -> None:
+        """Muestra un resultado en Resultados, Topología y Modelo OSI."""
+        self.results_page.set_result(result, exportable=True)
+        self.analysis = analyze_scan(result, xml)
+        self.topology_page.set_analysis(self.analysis)
+        self.osi_page.set_analysis(self.analysis)
+
+    def _scan_host(self, ip: str) -> None:
+        self.scan_page.target.setText(ip)
+        self.scan_page.select_profile("Puertos y servicios")
+        self.go("scan")
+
+    def _osi_for_host(self, ip: str) -> None:
+        self.osi_page.focus_host(ip)
+        self.go("osi")
+
+    def _investigate_layer(self, layer: int, host: str) -> None:
+        targets = host or self._current.get("targets", "") or self.analysis.topology.subnet
+        self.scan_page.target.setText(targets)
+        self.scan_page.set_options(suggested_options(layer, targets))
+        self.scan_page.select_profile("Personalizado")
+        self.go("scan")
+
     # ---------------------------------------------------------- historial
     def open_record(self, scan_id: int) -> None:
         rec = self.history.get(scan_id)
@@ -304,7 +347,7 @@ class ModernWindow(QMainWindow):
             except ValueError:
                 result = None
         self._last = {"result": result, "text": rec.output, "xml": rec.xml}
-        self.results_page.set_result(result, exportable=True)
+        self.show_result(result, rec.xml)
         self.scan_page.console.setPlainText(rec.output)
         self.go("results")
 
@@ -330,8 +373,10 @@ class ModernWindow(QMainWindow):
     # --------------------------------------------------- importar/exportar
     def import_xml(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, "Abrir XML de nmap", "", "XML de nmap (*.xml)")
-        if not path:
-            return
+        if path:
+            self.load_xml_file(path)
+
+    def load_xml_file(self, path: str) -> None:
         try:
             xml = Path(path).read_text(encoding="utf-8", errors="replace")
             result = parse_xml(xml)
@@ -339,7 +384,8 @@ class ModernWindow(QMainWindow):
             QMessageBox.critical(self, "No se pudo abrir", str(exc))
             return
         self._last = {"result": result, "text": f"[Importado de {path}]\n", "xml": xml}
-        self.results_page.set_result(result, exportable=True)
+        self._current = {"targets": " ".join(h.address for h in result.hosts if h.status == "up")}
+        self.show_result(result, xml)
         self.go("results")
 
     def export(self) -> None:

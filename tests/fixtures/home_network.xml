@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Escaneo de ejemplo de una red de casa (datos ficticios para pruebas). -->
+<nmaprun scanner="nmap" args="nmap -sS -sU -sV -O --traceroute --script=ssl-enum-ciphers,smb-protocols -oX - 192.168.1.0/24" start="1762900000" version="7.95">
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.1" addrtype="ipv4"/>
+    <address addr="50:C7:BF:00:00:01" addrtype="mac" vendor="TP-Link"/>
+    <hostnames><hostname name="router.local" type="PTR"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="53"><state state="open" reason="syn-ack"/><service name="domain" product="dnsmasq" version="2.89"/></port>
+      <port protocol="tcp" portid="80"><state state="open" reason="syn-ack"/><service name="http" product="lighttpd"/></port>
+      <port protocol="tcp" portid="443"><state state="open" reason="syn-ack"/><service name="http" product="lighttpd" tunnel="ssl"/>
+        <script id="ssl-enum-ciphers" output="TLSv1.2: ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 - A&#xa;least strength: A"/></port>
+      <port protocol="udp" portid="53"><state state="open" reason="udp-response"/><service name="domain"/></port>
+      <port protocol="udp" portid="1900"><state state="open" reason="udp-response"/><service name="upnp"/></port>
+    </ports>
+    <os><osmatch name="Linux 4.15 - 5.19" accuracy="95"><osclass type="broadband router" vendor="TP-Link" osfamily="embedded" accuracy="95"/></osmatch></os>
+    <distance value="1"/>
+  </host>
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.10" addrtype="ipv4"/>
+    <address addr="D8:BB:C1:00:00:10" addrtype="mac" vendor="Micro-Star INTL"/>
+    <hostnames><hostname name="pc-01.local" type="PTR"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="135"><state state="open" reason="syn-ack"/><service name="msrpc" product="Microsoft Windows RPC"/></port>
+      <port protocol="tcp" portid="139"><state state="open" reason="syn-ack"/><service name="netbios-ssn" product="Microsoft Windows netbios-ssn"/></port>
+      <port protocol="tcp" portid="445"><state state="open" reason="syn-ack"/><service name="microsoft-ds"/>
+        <script id="smb-protocols" output="&#xa;  dialects: &#xa;    2:1:0&#xa;    3:1:1"/></port>
+      <port protocol="tcp" portid="3389"><state state="open" reason="syn-ack"/><service name="ms-wbt-server" product="Microsoft Terminal Services"/></port>
+    </ports>
+    <os><osmatch name="Microsoft Windows 11" accuracy="97"><osclass type="general purpose" vendor="Microsoft" osfamily="Windows" accuracy="97"/></osmatch></os>
+    <distance value="1"/>
+  </host>
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.15" addrtype="ipv4"/>
+    <address addr="A4:83:E7:00:00:15" addrtype="mac" vendor="Apple"/>
+    <ports><extraports state="filtered" count="1000"/></ports>
+    <distance value="1"/>
+  </host>
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.20" addrtype="ipv4"/>
+    <address addr="00:11:32:00:00:20" addrtype="mac" vendor="Synology Incorporated"/>
+    <hostnames><hostname name="nas.local" type="PTR"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="22"><state state="open" reason="syn-ack"/><service name="ssh" product="OpenSSH" version="8.2p1"/></port>
+      <port protocol="tcp" portid="80"><state state="open" reason="syn-ack"/><service name="http" product="nginx"/></port>
+      <port protocol="tcp" portid="443"><state state="open" reason="syn-ack"/><service name="http" product="nginx" tunnel="ssl"/>
+        <script id="ssl-enum-ciphers" output="TLSv1.0: ciphers: TLS_RSA_WITH_AES_128_CBC_SHA - A&#xa;TLSv1.2: ciphers: TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 - A&#xa;least strength: A"/></port>
+      <port protocol="tcp" portid="445"><state state="open" reason="syn-ack"/><service name="microsoft-ds" product="Samba smbd"/>
+        <script id="smb-protocols" output="&#xa;  dialects: &#xa;    NT LM 0.12 (SMBv1) [dangerous, but default]&#xa;    2:1:0&#xa;    3:1:1"/></port>
+    </ports>
+    <os><osmatch name="Synology DiskStation Manager" accuracy="93"><osclass type="storage-misc" vendor="Synology" osfamily="Linux" accuracy="93"/></osmatch></os>
+    <distance value="1"/>
+  </host>
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.25" addrtype="ipv4"/>
+    <address addr="B8:27:EB:00:00:25" addrtype="mac" vendor="Raspberry Pi Foundation"/>
+    <ports>
+      <port protocol="tcp" portid="22"><state state="open" reason="syn-ack"/><service name="ssh" product="OpenSSH" version="9.2p1"/></port>
+    </ports>
+    <os><osmatch name="Linux 5.X" accuracy="96"><osclass type="general purpose" vendor="Linux" osfamily="Linux" accuracy="96"/></osmatch></os>
+    <distance value="1"/>
+  </host>
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.33" addrtype="ipv4"/>
+    <address addr="C0:56:E3:00:00:33" addrtype="mac" vendor="Hangzhou Hikvision"/>
+    <ports>
+      <port protocol="tcp" portid="80"><state state="open" reason="syn-ack"/><service name="http" product="Hikvision IP camera httpd"/></port>
+      <port protocol="tcp" portid="554"><state state="open" reason="syn-ack"/><service name="rtsp"/></port>
+      <port protocol="tcp" portid="8080"><state state="open" reason="syn-ack"/><service name="http-proxy"/></port>
+    </ports>
+    <os><osmatch name="Linux 3.X (embedded)" accuracy="92"><osclass type="webcam" vendor="Hikvision" osfamily="embedded" accuracy="92"/></osmatch></os>
+    <distance value="1"/>
+  </host>
+  <host>
+    <status state="up" reason="arp-response"/>
+    <address addr="192.168.1.40" addrtype="ipv4"/>
+    <address addr="3C:2A:F4:00:00:40" addrtype="mac" vendor="HP"/>
+    <ports>
+      <port protocol="tcp" portid="23"><state state="open" reason="syn-ack"/><service name="telnet"/></port>
+      <port protocol="tcp" portid="80"><state state="open" reason="syn-ack"/><service name="http" product="HP printer http config"/></port>
+      <port protocol="tcp" portid="631"><state state="open" reason="syn-ack"/><service name="ipp"/></port>
+      <port protocol="tcp" portid="9100"><state state="open" reason="syn-ack"/><service name="jetdirect"/></port>
+    </ports>
+    <os><osmatch name="HP LaserJet printer" accuracy="94"><osclass type="printer" vendor="HP" osfamily="embedded" accuracy="94"/></osmatch></os>
+    <distance value="1"/>
+  </host>
+  <host>
+    <status state="up" reason="echo-reply"/>
+    <address addr="10.20.0.5" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="443"><state state="open" reason="syn-ack"/><service name="https" tunnel="ssl"/></port>
+    </ports>
+    <distance value="3"/>
+    <trace port="443" proto="tcp">
+      <hop ttl="1" ipaddr="192.168.1.1" rtt="0.80" host="router.local"/>
+      <hop ttl="2" ipaddr="10.20.0.1" rtt="3.10"/>
+      <hop ttl="3" ipaddr="10.20.0.5" rtt="3.90"/>
+    </trace>
+  </host>
+  <runstats>
+    <finished time="1762900120" elapsed="120.50" summary="Nmap done: 257 IP addresses (8 hosts up) scanned in 120.50 seconds"/>
+    <hosts up="8" down="249" total="257"/>
+  </runstats>
+</nmaprun>

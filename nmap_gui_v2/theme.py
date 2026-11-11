@@ -147,6 +147,28 @@ QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: none; }
 
 QSplitter::handle { background: transparent; }
+
+/* ---------- Etiquetas, mapa y capas ---------- */
+#Tag, #TagAccent, #TagDanger, #TagWarn, #TagInfo {
+    border-radius: 10px; padding: 3px 10px; font-size: 12px; font-weight: 600;
+}
+#Tag { background: {card2}; border: 1px solid {border}; color: {text}; }
+#TagAccent { background: {accent_soft}; color: {accent}; border: 1px solid transparent; }
+#TagDanger { background: rgba(244,63,94,0.14); color: {danger}; border: 1px solid transparent; }
+#TagWarn { background: rgba(245,158,11,0.16); color: {warn}; border: 1px solid transparent; }
+#TagInfo { background: rgba(56,189,248,0.14); color: {info}; border: 1px solid transparent; }
+QGraphicsView { border: none; border-radius: 10px; background: {console}; }
+#LayerBadge {
+    min-width: 34px; max-width: 34px; min-height: 34px; max-height: 34px; border-radius: 9px;
+    border: 2px solid {accent}; color: {accent}; font-weight: 700; font-size: 15px;
+}
+#LayerBadgeActive {
+    min-width: 34px; max-width: 34px; min-height: 34px; max-height: 34px; border-radius: 9px;
+    background: {accent}; color: {accent_text}; font-weight: 700; font-size: 15px;
+}
+#CardActive { background: {card}; border: 1px solid {accent}; border-radius: 14px; }
+#Inset { background: {card2}; border: 1px solid {border}; border-radius: 10px; }
+#SectionLabel { color: {accent}; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
 QMessageBox { background: {card}; }
 QMenu { background: {card}; border: 1px solid {border}; padding: 4px; }
 QMenu::item { padding: 6px 18px; border-radius: 6px; }
