@@ -167,22 +167,28 @@ class TopologyPage(QWidget):
 
         self.detail = self._build_detail()
 
-        split = QSplitter(Qt.Orientation.Horizontal)
+        self.split = split = QSplitter(Qt.Orientation.Horizontal)
         split.addWidget(map_card)
         split.addWidget(self.detail)
         split.setStretchFactor(0, 1)
         split.setSizes([820, 330])
         lay.addWidget(split, 1)
 
-        self.empty = QLabel("Aún no hay mapa. Ejecuta un escaneo o abre un XML de nmap.")
+        self.empty = QLabel("Aún no hay mapa. Ejecuta un escaneo, abre un XML de nmap\n"
+                            "o mira cómo se ve con una red de casa ficticia.")
         self.empty.setObjectName("Muted")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lay.addWidget(self.empty)
         self.btn_demo = QPushButton("Ver red de ejemplo")
         self.btn_demo.setObjectName("AccentButton")
         self.btn_demo.setToolTip("Muestra una red de casa ficticia, sin escanear nada")
         self.btn_demo.clicked.connect(self.demo_requested)
-        lay.addWidget(self.btn_demo, 0, Qt.AlignmentFlag.AlignCenter)
+        self.empty_box = QWidget()
+        eb = QVBoxLayout(self.empty_box)
+        eb.addStretch(1)
+        eb.addWidget(self.empty)
+        eb.addWidget(self.btn_demo, 0, Qt.AlignmentFlag.AlignCenter)
+        eb.addStretch(1)
+        lay.addWidget(self.empty_box, 1)
 
         self.scene.selectionChanged.connect(self._on_selection)
         self.only_findings.toggled.connect(self._apply_filter)
@@ -315,8 +321,10 @@ class TopologyPage(QWidget):
         self.items = {}
         topo = self.analysis.topology
         has = bool(topo.nodes)
-        self.empty.setVisible(not has)
-        self.btn_demo.setVisible(not has)
+        self.empty_box.setVisible(not has)
+        self.split.setVisible(has)
+        for btn in (self.only_findings, self.btn_fit, self.btn_png):
+            btn.setEnabled(has)
         self.view.setBackgroundBrush(QColor(self._map_bg()))
         self._show_detail(None)
         if not has:

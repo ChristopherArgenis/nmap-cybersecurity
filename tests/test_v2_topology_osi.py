@@ -200,12 +200,12 @@ def test_demo_mode(tmp_path):
     settings = QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat)
     w = ModernWindow(history_path=tmp_path / "h.db", settings=settings)
     assert DEMO_XML.is_file()
-    assert w.topology_page.btn_demo.isVisibleTo(w.topology_page)
+    assert w.topology_page.empty_box.isVisibleTo(w.topology_page)
     w.topology_page.btn_demo.click()  # no ejecuta nmap: solo lee el XML incluido
     app.processEvents()
     assert w.stack.currentWidget() is w.topology_page
     assert len(w.topology_page.items) == 11
-    assert not w.topology_page.btn_demo.isVisibleTo(w.topology_page)
+    assert not w.topology_page.empty_box.isVisibleTo(w.topology_page)
     assert w.results_page.host_list.count() == 8
     assert len(w.osi_page.cards) == 7
     assert "No se ejecutó nmap" in w._last["text"]
