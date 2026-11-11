@@ -14,7 +14,8 @@ from nmap_gui_v2.core.osi import LAYERS, build_osi, suggested_options
 from nmap_gui_v2.core.topology import NODE_H, NODE_W, layout
 
 FIXTURES = Path(__file__).parent / "fixtures"
-HOME = (FIXTURES / "home_network.xml").read_text()
+DEMO = Path(__file__).parent.parent / "nmap_gui_v2" / "data" / "red_ejemplo.xml"
+HOME = DEMO.read_text()
 SAMPLE = (FIXTURES / "sample_scan.xml").read_text()
 
 
@@ -139,7 +140,7 @@ def window(tmp_path):
     app = QApplication.instance() or QApplication([])
     settings = QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat)
     w = ModernWindow(history_path=tmp_path / "h.db", settings=settings)
-    w.load_xml_file(str(FIXTURES / "home_network.xml"))
+    w.load_xml_file(str(DEMO))
     app.processEvents()
     yield w
     w.close()
@@ -190,3 +191,23 @@ def test_gui_theme_switch_keeps_pages(window):
     window.apply_theme("oscuro")
     assert window.topology_page.d_title.text() == "Cámara IP"
     assert len(window.osi_page.cards) == 7
+
+
+def test_demo_mode(tmp_path):
+    from nmap_gui_v2.main_window import DEMO_XML, ModernWindow
+
+    app = QApplication.instance() or QApplication([])
+    settings = QSettings(str(tmp_path / "s.ini"), QSettings.Format.IniFormat)
+    w = ModernWindow(history_path=tmp_path / "h.db", settings=settings)
+    assert DEMO_XML.is_file()
+    assert w.topology_page.btn_demo.isVisibleTo(w.topology_page)
+    w.topology_page.btn_demo.click()  # no ejecuta nmap: solo lee el XML incluido
+    app.processEvents()
+    assert w.stack.currentWidget() is w.topology_page
+    assert len(w.topology_page.items) == 11
+    assert not w.topology_page.btn_demo.isVisibleTo(w.topology_page)
+    assert w.results_page.host_list.count() == 8
+    assert len(w.osi_page.cards) == 7
+    assert "No se ejecutó nmap" in w._last["text"]
+    assert w.history.list() == []  # la demostración no se guarda en el historial
+    w.close()

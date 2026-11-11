@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Escaneo de ejemplo de una red de casa (datos ficticios para pruebas). -->
+<!-- Red de casa de ejemplo: datos ficticios. Se usa en el modo demostración y en las pruebas. -->
 <nmaprun scanner="nmap" args="nmap -sS -sU -sV -O --traceroute --script=ssl-enum-ciphers,smb-protocols -oX - 192.168.1.0/24" start="1762900000" version="7.95">
   <host>
     <status state="up" reason="arp-response"/>

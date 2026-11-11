@@ -46,7 +46,16 @@ jobs:
           --name "NMAP-GUI-v2"
           --icon packaging/icon.ico
           --paths .
+          --add-data "nmap_gui_v2/data;nmap_gui_v2/data"
           packaging/run_v2.py
+
+      - name: Comprobar que la red de ejemplo va dentro del .exe
+        if: hashFiles('packaging/run_v2.py') != ''
+        run: >
+          python -c "from PyInstaller.archive.readers import CArchiveReader as R;
+          toc = R('dist/NMAP-GUI-v2.exe').toc;
+          assert any('red_ejemplo' in str(n) for n in toc), 'falta la red de ejemplo';
+          print('red de ejemplo incluida')"
 
       - name: Guardar como artefacto
         uses: actions/upload-artifact@v4
@@ -67,7 +76,8 @@ jobs:
             (el instalador incluye Npcap). La app detecta nmap automáticamente.
 
             - `NMAP-GUI-v1.exe`: versión clásica.
-            - `NMAP-GUI-v2.exe`: versión moderna (si está incluida).
+            - `NMAP-GUI-v2.exe`: versión moderna con Topología y Modelo OSI. Incluye una
+              red de ejemplo (Ajustes → Cargar red de ejemplo) para verla sin escanear nada.
 
             Windows puede mostrar "Windows protegió su PC" porque el .exe no está firmado:
             pulsa **Más información → Ejecutar de todas formas**.

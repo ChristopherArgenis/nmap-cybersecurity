@@ -30,6 +30,7 @@ from .scan_page import page_header
 class ResultsPage(QWidget):
     export_requested = Signal()
     import_requested = Signal()
+    demo_requested = Signal()
 
     def __init__(self, theme: str, parent: QWidget | None = None):
         super().__init__(parent)
@@ -43,9 +44,12 @@ class ResultsPage(QWidget):
 
         head = QHBoxLayout()
         head.addWidget(page_header("Resultados", "Hosts encontrados y sus puertos."), 1)
+        self.btn_demo = QPushButton("Red de ejemplo")
+        self.btn_demo.setToolTip("Muestra una red de casa ficticia, sin escanear nada")
         self.btn_import = QPushButton("Abrir XML…")
         self.btn_export = QPushButton("Exportar…")
         self.btn_export.setEnabled(False)
+        head.addWidget(self.btn_demo, 0, Qt.AlignmentFlag.AlignBottom)
         head.addWidget(self.btn_import, 0, Qt.AlignmentFlag.AlignBottom)
         head.addWidget(self.btn_export, 0, Qt.AlignmentFlag.AlignBottom)
         lay.addLayout(head)
@@ -115,7 +119,7 @@ class ResultsPage(QWidget):
         split.setSizes([280, 760])
         lay.addWidget(split, 1)
 
-        self.empty = QLabel("Aún no hay resultados. Ejecuta un escaneo o abre un XML de nmap.")
+        self.empty = QLabel("Aún no hay resultados. Ejecuta un escaneo, abre un XML de nmap o pulsa «Red de ejemplo».")
         self.empty.setObjectName("Muted")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(self.empty)
@@ -126,6 +130,7 @@ class ResultsPage(QWidget):
         self.table.currentCellChanged.connect(self._show_port)
         self.btn_export.clicked.connect(self.export_requested)
         self.btn_import.clicked.connect(self.import_requested)
+        self.btn_demo.clicked.connect(self.demo_requested)
         self.apply_theme(theme)
         self.set_result(None)
 

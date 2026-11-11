@@ -42,6 +42,8 @@ from .pages.topology_page import TopologyPage
 from .theme import color, stylesheet
 from .widgets import ToggleSwitch
 
+DEMO_XML = Path(__file__).parent / "data" / "red_ejemplo.xml"
+
 DISCLAIMER = (
     "NMAP Studio ejecuta nmap, un escáner de redes.\n\n"
     "Escanear redes o equipos sin autorización puede ser ilegal y violar las políticas "
@@ -187,6 +189,8 @@ class ModernWindow(QMainWindow):
         self.topology_page.scan_host.connect(self._scan_host)
         self.topology_page.show_osi.connect(self._osi_for_host)
         self.osi_page.investigate.connect(self._investigate_layer)
+        for page in (self.results_page, self.topology_page, self.osi_page, self.settings_page):
+            page.demo_requested.connect(self.load_demo)
         QShortcut(QKeySequence("Ctrl+E"), self, self.export)
 
     def go(self, key: str) -> None:
@@ -318,6 +322,19 @@ class ModernWindow(QMainWindow):
         self.analysis = analyze_scan(result, xml)
         self.topology_page.set_analysis(self.analysis)
         self.osi_page.set_analysis(self.analysis)
+
+    def load_demo(self) -> None:
+        """Carga la red de ejemplo incluida en la app (datos ficticios, no escanea nada)."""
+        xml = DEMO_XML.read_text(encoding="utf-8")
+        result = parse_xml(xml)
+        text = ("[Red de ejemplo: datos ficticios incluidos en la app. "
+                "No se ejecutó nmap ni se escaneó ninguna red.]\n")
+        self._last = {"result": result, "text": text, "xml": xml}
+        self._current = {"targets": "192.168.1.0/24"}
+        self.show_result(result, xml)
+        self.scan_page.console.setPlainText(text)
+        self.side_status.setText("● Viendo la red de ejemplo")
+        self.go("topology")
 
     def _scan_host(self, ip: str) -> None:
         self.scan_page.target.setText(ip)

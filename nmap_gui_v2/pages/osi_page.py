@@ -141,6 +141,7 @@ class LayerCard(QFrame):
 
 class OsiPage(QWidget):
     investigate = Signal(int, str)  # capa, objetivo ("" = los del último escaneo)
+    demo_requested = Signal()
 
     def __init__(self, theme: str, parent: QWidget | None = None):
         super().__init__(parent)
@@ -234,6 +235,10 @@ class OsiPage(QWidget):
                           "Mientras tanto, abre cualquier capa para aprender qué hace.")
             note.setObjectName("Muted")
             note.setWordWrap(True)
+            demo = QPushButton("Ver red de ejemplo")
+            demo.setObjectName("AccentButton")
+            demo.clicked.connect(self.demo_requested)
+            self.list_layout.insertWidget(0, demo, 0, Qt.AlignmentFlag.AlignLeft)
             self.list_layout.insertWidget(0, note)
         self.list_layout.addStretch(1)
 

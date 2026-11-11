@@ -13,6 +13,7 @@ class SettingsPage(QWidget):
     theme_changed = Signal(str)
     browse_requested = Signal()
     nmap_path_changed = Signal(str)
+    demo_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -49,6 +50,16 @@ class SettingsPage(QWidget):
         nm.body.addWidget(hint)
         lay.addWidget(nm)
 
+        demo = Card("Demostración")
+        dtxt = QLabel("Carga una red de casa ficticia para recorrer todas las pantallas sin ejecutar "
+                      "nmap ni escanear ninguna red.")
+        dtxt.setObjectName("Muted")
+        dtxt.setWordWrap(True)
+        self.btn_demo = QPushButton("Cargar red de ejemplo")
+        demo.body.addWidget(dtxt)
+        demo.body.addWidget(self.btn_demo, 0, Qt.AlignmentFlag.AlignLeft)
+        lay.addWidget(demo)
+
         legal = Card("Uso responsable")
         txt = QLabel(
             "Escanea solo redes y equipos propios o donde tengas permiso explícito. "
@@ -67,4 +78,5 @@ class SettingsPage(QWidget):
 
         self.dark.toggled.connect(lambda on: self.theme_changed.emit("oscuro" if on else "claro"))
         self.btn_browse.clicked.connect(self.browse_requested)
+        self.btn_demo.clicked.connect(self.demo_requested)
         self.nmap_path.editingFinished.connect(lambda: self.nmap_path_changed.emit(self.nmap_path.text().strip()))

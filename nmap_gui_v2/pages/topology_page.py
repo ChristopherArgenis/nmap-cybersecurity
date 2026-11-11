@@ -130,6 +130,7 @@ class MapView(QGraphicsView):
 class TopologyPage(QWidget):
     scan_host = Signal(str)
     show_osi = Signal(str)
+    demo_requested = Signal()
 
     def __init__(self, theme: str, parent: QWidget | None = None):
         super().__init__(parent)
@@ -177,6 +178,11 @@ class TopologyPage(QWidget):
         self.empty.setObjectName("Muted")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(self.empty)
+        self.btn_demo = QPushButton("Ver red de ejemplo")
+        self.btn_demo.setObjectName("AccentButton")
+        self.btn_demo.setToolTip("Muestra una red de casa ficticia, sin escanear nada")
+        self.btn_demo.clicked.connect(self.demo_requested)
+        lay.addWidget(self.btn_demo, 0, Qt.AlignmentFlag.AlignCenter)
 
         self.scene.selectionChanged.connect(self._on_selection)
         self.only_findings.toggled.connect(self._apply_filter)
@@ -310,6 +316,7 @@ class TopologyPage(QWidget):
         topo = self.analysis.topology
         has = bool(topo.nodes)
         self.empty.setVisible(not has)
+        self.btn_demo.setVisible(not has)
         self.view.setBackgroundBrush(QColor(self._map_bg()))
         self._show_detail(None)
         if not has:
