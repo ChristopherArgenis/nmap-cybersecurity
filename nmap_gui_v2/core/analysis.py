@@ -10,6 +10,7 @@ from .changes import ChangeSet, compare
 from .extras import HostExtras, extract_extras
 from .findings import Finding, analyze
 from .topology import Topology, build_topology
+from .webaudit import merge_findings
 
 
 @dataclass
@@ -27,10 +28,15 @@ def analyze_scan(
     previous: ScanResult | None = None,
     previous_label: str = "Escaneo anterior",
     current_label: str = "Escaneo actual",
+    extra_findings: list[Finding] | None = None,
 ) -> Analysis:
-    """Analiza un escaneo. Con `previous`, también marca lo que cambió desde entonces."""
+    """Analiza un escaneo.
+
+    Con `previous` también marca lo que cambió desde entonces; `extra_findings`
+    suma hallazgos de otras herramientas (por ejemplo, la auditoría web).
+    """
     extras = extract_extras(xml)
-    findings = analyze(result, extras)
+    findings = merge_findings(analyze(result, extras), extra_findings or [])
     topology = build_topology(result, extras, findings)
     changes = compare(previous, result, previous_label, current_label)
     new_hosts, opened = changes.new_hosts, changes.opened

@@ -34,7 +34,11 @@ from .icons import icon
 from .core.analysis import Analysis, analyze_scan
 from .core.changes import compare
 from .core.osi import suggested_options
+from .core.webaudit import web_targets
+from .core.webaudit_demo import demo_results
 from .pages.changes_page import ChangesPage
+from .pages.web_page import WebAuditPage
+from .web_runner import WebAuditRunner
 from .pages.history_page import HistoryPage
 from .pages.osi_page import OsiPage
 from .pages.results_page import ResultsPage
@@ -60,6 +64,7 @@ NAV = [
     ("topology", "Topología", "topology"),
     ("osi", "Modelo OSI", "layers"),
     ("changes", "Cambios", "diff"),
+    ("web", "Auditoría web", "web"),
     ("history", "Historial", "history"),
     ("settings", "Ajustes", "settings"),
 ]
@@ -82,6 +87,10 @@ class ModernWindow(QMainWindow):
         self._current: dict = {}
         self._last: dict = {}
         self.analysis = Analysis()
+        self.web_runner = WebAuditRunner(self)
+        self.web_results: list = []
+        self._analysis_args: tuple = (None, "")
+        self._demo = False
 
         self._build()
         self._connect()
@@ -142,6 +151,7 @@ class ModernWindow(QMainWindow):
         self.topology_page = TopologyPage(self.theme)
         self.osi_page = OsiPage(self.theme)
         self.changes_page = ChangesPage(self.theme)
+        self.web_page = WebAuditPage(self.theme)
         self.history_page = HistoryPage(self.history)
         self.settings_page = SettingsPage()
         self.pages = {
@@ -150,6 +160,7 @@ class ModernWindow(QMainWindow):
             "topology": self.topology_page,
             "osi": self.osi_page,
             "changes": self.changes_page,
+            "web": self.web_page,
             "history": self.history_page,
             "settings": self.settings_page,
         }
@@ -197,9 +208,13 @@ class ModernWindow(QMainWindow):
         self.topology_page.show_osi.connect(self._osi_for_host)
         self.osi_page.investigate.connect(self._investigate_layer)
         for page in (self.results_page, self.topology_page, self.osi_page, self.changes_page,
-                     self.settings_page):
+                     self.web_page, self.settings_page):
             page.demo_requested.connect(self.load_demo)
         self.changes_page.compare_requested.connect(self.compare_records)
+        self.web_page.audit_requested.connect(self.start_web_audit)
+        self.web_page.cancel_requested.connect(self.web_runner.cancel)
+        self.web_runner.progress.connect(self.web_page.set_progress)
+        self.web_runner.finished.connect(self._on_web_finished)
         QShortcut(QKeySequence("Ctrl+E"), self, self.export)
 
     def go(self, key: str) -> None:
@@ -226,6 +241,7 @@ class ModernWindow(QMainWindow):
         self.topology_page.apply_theme(theme)
         self.osi_page.apply_theme(theme)
         self.changes_page.apply_theme(theme)
+        self.web_page.apply_theme(theme)
         st = self.settings_page.dark
         st.blockSignals(True)
         st.setChecked(theme == "oscuro")
@@ -340,10 +356,50 @@ class ModernWindow(QMainWindow):
     ) -> None:
         """Muestra un resultado en Resultados, Topología, Modelo OSI y Cambios."""
         self.results_page.set_result(result, exportable=True)
-        self.analysis = analyze_scan(result, xml, previous, previous_label, current_label)
+        self._analysis_args = (result, xml, previous, previous_label, current_label)
+        self._demo = False
+        self.web_results = []
+        self.web_runner.cancel()
+        self.analysis = analyze_scan(*self._analysis_args)
         self.topology_page.set_analysis(self.analysis)
         self.osi_page.set_analysis(self.analysis)
         self.changes_page.set_changes(self.analysis.changes)
+        self.web_page.set_targets(web_targets(result, self.analysis.extras))
+
+    # ------------------------------------------------------- auditoría web
+    def start_web_audit(self) -> None:
+        targets = self.web_page.targets
+        if not targets or self.web_runner.running:
+            return
+        if self._demo:
+            # La red de ejemplo es ficticia: nunca se conecta a esas direcciones.
+            self._on_web_finished(demo_results(targets))
+            return
+        hosts = sorted({t.host for t in targets})
+        shown = ", ".join(hosts[:6]) + (" …" if len(hosts) > 6 else "")
+        answer = QMessageBox.question(
+            self, "Auditoría web",
+            f"Se visitará la página principal de {len(targets)} servicio(s) web en {len(hosts)} equipo(s):\n"
+            f"{shown}\n\nNo se prueban contraseñas ni se ataca nada, pero sí se conecta a esos equipos.\n"
+            "Continúa solo si son tuyos o tienes permiso.\n\n¿Continuar?")
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        self.web_page.set_running(True)
+        self.side_status.setText("● Auditoría web en curso…")
+        self.web_runner.start(targets)
+
+    def _on_web_finished(self, results: list) -> None:
+        self.web_page.set_running(False)
+        self.web_results = results
+        self.web_page.set_results(results)
+        extra = [f for r in results for f in r.findings]
+        result, xml, *rest = self._analysis_args
+        demo = self._demo
+        self.analysis = analyze_scan(result, xml, *rest, extra_findings=extra)
+        self._demo = demo
+        self.topology_page.set_analysis(self.analysis)
+        self.osi_page.set_analysis(self.analysis)
+        self.side_status.setText(f"● Auditoría web: {len(extra)} hallazgo(s)")
 
     # ------------------------------------------------- vigilancia de cambios
     def _previous_record(self, targets: str, before: float | None = None):
@@ -391,6 +447,7 @@ class ModernWindow(QMainWindow):
         self._current = {"targets": "192.168.1.0/24"}
         previous = parse_xml(DEMO_PREVIOUS_XML.read_text(encoding="utf-8"))
         self.show_result(result, xml, previous, "Red de ejemplo · hace una semana", "Red de ejemplo · hoy")
+        self._demo = True
         self.scan_page.console.setPlainText(text)
         self.side_status.setText("● Viendo la red de ejemplo")
         self.go("topology")
@@ -500,6 +557,7 @@ class ModernWindow(QMainWindow):
         return False
 
     def closeEvent(self, event) -> None:  # noqa: N802
+        self.web_runner.cancel()
         if self.runner.running:
             if QMessageBox.question(self, "Salir", "Hay un escaneo en curso. ¿Detenerlo y salir?") \
                     != QMessageBox.StandardButton.Yes:
