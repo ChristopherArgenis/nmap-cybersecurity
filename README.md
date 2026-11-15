@@ -10,6 +10,45 @@ Hay **dos versiones** con las mismas funciones y la misma lógica (`nmap_gui/cor
 | 1 · Clásica | `nmap_gui` | Ventana de escritorio tradicional (menús, pestañas) | `python -m nmap_gui` |
 | 2 · Moderna (NMAP Studio) | `nmap_gui_v2` | Barra lateral, tarjetas, modo oscuro/claro | `python -m nmap_gui_v2` |
 
+> ⚠️ **Uso responsable.** Escanea solo redes y equipos propios o donde tengas
+> permiso explícito. Escanear redes ajenas (por ejemplo, la red de una escuela
+> o empresa) sin autorización puede ser ilegal.
+
+## Funciones
+
+- **Escaneo**: escribe uno o varios objetivos (IP, rango CIDR, dominio), elige un
+  perfil y pulsa *Escanear*. La salida de nmap aparece en vivo, con barra de
+  progreso y botón *Cancelar*.
+- **Constructor de comandos**: casillas y campos para tipo de escaneo, velocidad
+  (T0–T5), puertos, detección de versiones/SO, scripts NSE y más. El comando
+  resultante se ve (y se copia) en todo momento.
+- **Resultados en tabla**: hosts y puertos en un árbol con colores por estado,
+  filtro de texto, opción *Solo abiertos* y panel de detalle (SO, MAC, scripts).
+- **Historial**: cada escaneo se guarda en SQLite. Puedes abrirlo, repetirlo o borrarlo.
+- **Exportar**: TXT, XML de nmap, CSV e informe HTML (Archivo → Exportar).
+- **Topología** (versión 2): mapa de la red deducido del escaneo, con zonas
+  (infraestructura, equipos, IoT, fuera de la red local), colores por riesgo,
+  zoom, detalle de cada equipo y exportación a PNG.
+- **Modelo OSI** (versión 2): protocolos y hallazgos de tu red ordenados en las
+  7 capas, con explicaciones (modo aprendizaje) y un botón que prepara el escaneo
+  recomendado para investigar cada capa.
+
+- **Vigilancia de cambios** (versión 2): cada escaneo se compara con el anterior
+  de los mismos objetivos (como `ndiff`): equipos nuevos o que desaparecen, puertos
+  que se abren o se cierran y servicios que cambian. El mapa los marca con
+  «NUEVO» / «+N PUERTOS».
+- **Auditoría web y TLS** (versión 2): revisa los paneles web encontrados por
+  nmap: versión de TLS, TLS 1.0/1.1, certificado (caducidad, autofirmado, clave),
+  redirección a HTTPS, cabeceras de seguridad, contraseñas pedidas sin cifrar y
+  cookies inseguras. Solo visita la página principal y pide confirmación antes.
+- **Reporte PDF** (versión 2): informe con resumen ejecutivo y prioridades, mapa,
+  equipos, hallazgos por capa OSI, cambios, auditoría web y metodología.
+
+> Para un mapa y un análisis más completos, usa el perfil *Escaneo intenso* (`-A`):
+> añade detección de sistema operativo, versiones y `--traceroute`. Los hallazgos
+> son orientativos y se deducen de lo que nmap reporta.
+  También puedes abrir un XML generado por nmap en otro lugar (Archivo → Abrir).
+
 ## Descargar para Windows
 
 1. Ve a **[Releases](https://github.com/ChristopherArgenis/nmap-cybersecurity/releases)** y
