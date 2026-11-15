@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QRectF, QSize, Qt
+from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
     QAbstractButton,
     QFrame,
     QGraphicsDropShadowEffect,
     QLabel,
+    QLayout,
     QStyle,
     QStyledItemDelegate,
     QStyleOptionViewItem,
@@ -173,3 +174,74 @@ class PillDelegate(QStyledItemDelegate):
         painter.setFont(f)
         painter.drawText(r, Qt.AlignmentFlag.AlignCenter, text)
         painter.restore()
+
+
+class FlowLayout(QLayout):
+    """Acomoda los widgets en filas y pasa a la siguiente cuando no caben."""
+
+    def __init__(self, parent: QWidget | None = None, spacing: int = 6):
+        super().__init__(parent)
+        self._items: list = []
+        self._spacing = spacing
+        self.setContentsMargins(0, 0, 0, 0)
+
+    def addItem(self, item) -> None:  # noqa: N802
+        self._items.append(item)
+
+    def count(self) -> int:
+        return len(self._items)
+
+    def itemAt(self, index: int):  # noqa: N802
+        return self._items[index] if 0 <= index < len(self._items) else None
+
+    def takeAt(self, index: int):  # noqa: N802
+        return self._items.pop(index) if 0 <= index < len(self._items) else None
+
+    def expandingDirections(self):  # noqa: N802
+        return Qt.Orientation(0)
+
+    def hasHeightForWidth(self) -> bool:  # noqa: N802
+        return True
+
+    def heightForWidth(self, width: int) -> int:  # noqa: N802
+        return self._arrange(QRect(0, 0, width, 0), apply=False)
+
+    def setGeometry(self, rect: QRect) -> None:  # noqa: N802
+        super().setGeometry(rect)
+        self._arrange(rect, apply=True)
+
+    def sizeHint(self) -> QSize:  # noqa: N802
+        return self.minimumSize()
+
+    def minimumSize(self) -> QSize:  # noqa: N802
+        size = QSize()
+        for item in self._items:
+            size = size.expandedTo(item.minimumSize())
+        return size
+
+    def clear(self) -> None:
+        while self._items:
+            item = self._items.pop()
+            if item.widget():
+                item.widget().deleteLater()
+
+    def _arrange(self, rect: QRect, apply: bool) -> int:
+        x, y, line_h = rect.x(), rect.y(), 0
+        for item in self._items:
+            hint = item.sizeHint()
+            if x + hint.width() > rect.right() + 1 and line_h > 0:
+                x = rect.x()
+                y += line_h + self._spacing
+                line_h = 0
+            if apply:
+                item.setGeometry(QRect(x, y, hint.width(), hint.height()))
+            x += hint.width() + self._spacing
+            line_h = max(line_h, hint.height())
+        return y + line_h - rect.y()
+
+
+def tag(text: str, variant: str = "") -> QLabel:
+    """Etiqueta pequeña redondeada. variant: "" | "accent" | "danger" | "warn" | "info"."""
+    lbl = QLabel(text)
+    lbl.setObjectName("Tag" + variant.capitalize())
+    return lbl

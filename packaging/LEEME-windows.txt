@@ -1,0 +1,22 @@
+NMAP Studio / NMAP GUI para Windows
+===================================
+
+1. Antes de descomprimir (recomendado)
+   Clic derecho en el .zip -> Propiedades -> marca "Desbloquear" -> Aceptar.
+   Así Windows no marcará cada archivo como "descargado de Internet".
+
+2. Descomprime el .zip (clic derecho -> Extraer todo).
+   No ejecutes la app desde dentro del .zip: necesita su carpeta completa.
+
+3. Abre la carpeta y haz doble clic en el .exe.
+   Si aparece "Windows protegió su PC": Más información -> Ejecutar de todas formas.
+   Sale porque la app no tiene firma digital de pago, no porque tenga un virus.
+   El código es abierto: https://github.com/ChristopherArgenis/nmap-cybersecurity
+
+Para verla SIN escanear nada (versión 2)
+   Ajustes -> "Cargar red de ejemplo", o el botón "Red de ejemplo" en Resultados.
+   Es una red de casa ficticia: no necesitas tener nmap instalado.
+
+Para escanear de verdad
+   Instala nmap: https://nmap.org/download.html (incluye Npcap).
+   Escanea solo redes propias o donde tengas permiso.

@@ -10,13 +10,6 @@ Hay **dos versiones** con las mismas funciones y la misma lógica (`nmap_gui/cor
 | 1 · Clásica | `nmap_gui` | Ventana de escritorio tradicional (menús, pestañas) | `python -m nmap_gui` |
 | 2 · Moderna (NMAP Studio) | `nmap_gui_v2` | Barra lateral, tarjetas, modo oscuro/claro | `python -m nmap_gui_v2` |
 
-## Descargar el .exe (Windows)
-
-Ve a **[Releases](https://github.com/ChristopherArgenis/nmap-cybersecurity/releases)**,
-descarga `NMAP-GUI-v1.exe` o `NMAP-GUI-v2.exe` y ábrelo con doble clic (no necesita Python).
-Solo necesitas tener [nmap para Windows](https://nmap.org/download.html) instalado.
-Los .exe se compilan solos con GitHub Actions (`.github/workflows/build-windows.yml`).
-
 > ⚠️ **Uso responsable.** Escanea solo redes y equipos propios o donde tengas
 > permiso explícito. Escanear redes ajenas (por ejemplo, la red de una escuela
 > o empresa) sin autorización puede ser ilegal.
@@ -34,6 +27,40 @@ Los .exe se compilan solos con GitHub Actions (`.github/workflows/build-windows.
 - **Historial**: cada escaneo se guarda en SQLite. Puedes abrirlo, repetirlo o borrarlo.
 - **Exportar**: TXT, XML de nmap, CSV e informe HTML (Archivo → Exportar).
   También puedes abrir un XML generado por nmap en otro lugar (Archivo → Abrir).
+- **Topología** (versión 2): mapa de la red deducido del escaneo, con zonas
+  (infraestructura, equipos, IoT, fuera de la red local), colores por riesgo,
+  zoom, detalle de cada equipo y exportación a PNG.
+- **Modelo OSI** (versión 2): protocolos y hallazgos de tu red ordenados en las
+  7 capas, con explicaciones (modo aprendizaje) y un botón que prepara el escaneo
+  recomendado para investigar cada capa.
+- **Vigilancia de cambios** (versión 2): cada escaneo se compara con el anterior
+  de los mismos objetivos (como `ndiff`): equipos nuevos o que desaparecen, puertos
+  que se abren o se cierran y servicios que cambian. El mapa los marca con
+  «NUEVO» / «+N PUERTOS».
+- **Auditoría web y TLS** (versión 2): revisa los paneles web encontrados por
+  nmap: versión de TLS, TLS 1.0/1.1, certificado (caducidad, autofirmado, clave),
+  redirección a HTTPS, cabeceras de seguridad, contraseñas pedidas sin cifrar y
+  cookies inseguras. Solo visita la página principal y pide confirmación antes.
+- **Reporte PDF** (versión 2): informe con resumen ejecutivo y prioridades, mapa,
+  equipos, hallazgos por capa OSI, cambios, auditoría web y metodología.
+
+> Para un mapa y un análisis más completos, usa el perfil *Escaneo intenso* (`-A`):
+> añade detección de sistema operativo, versiones y `--traceroute`. Los hallazgos
+> son orientativos y se deducen de lo que nmap reporta.
+
+## Descargar para Windows
+
+1. Ve a **[Releases](https://github.com/ChristopherArgenis/nmap-cybersecurity/releases)** y
+   descarga `NMAP-Studio-v…-windows.zip` (versión 2) o `NMAP-GUI-v…-windows.zip` (versión 1).
+2. Clic derecho en el .zip → **Propiedades** → marca **Desbloquear** → Aceptar.
+3. Descomprímelo y abre el `.exe` que hay dentro de la carpeta. No necesita Python.
+4. Si Windows muestra «Windows protegió su PC»: **Más información → Ejecutar de todas formas**.
+   Aparece porque la app no tiene firma digital de pago; el código es abierto aquí mismo.
+
+Para verla sin escanear nada: **Ajustes → Cargar red de ejemplo** (una red de casa ficticia).
+Para escanear de verdad instala [nmap para Windows](https://nmap.org/download.html).
+Los paquetes se compilan solos con GitHub Actions (`.github/workflows/build-windows.yml`),
+que antes de publicar abre la app en Windows para comprobar que arranca.
 
 ## Requisitos
 
@@ -76,6 +103,7 @@ nmap_gui/
     exporter.py         TXT / XML / CSV / HTML
   ui/                   ventanas y paneles PySide6 (versión 1)
 nmap_gui_v2/            versión 2: tema, iconos, componentes y páginas
+  core/                 hallazgos, topología y modelo OSI (sin interfaz)
 packaging/              entradas para PyInstaller e icono
 tests/                  pruebas con pytest
 ```
