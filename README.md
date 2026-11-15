@@ -26,13 +26,13 @@ Hay **dos versiones** con las mismas funciones y la misma lógica (`nmap_gui/cor
   filtro de texto, opción *Solo abiertos* y panel de detalle (SO, MAC, scripts).
 - **Historial**: cada escaneo se guarda en SQLite. Puedes abrirlo, repetirlo o borrarlo.
 - **Exportar**: TXT, XML de nmap, CSV e informe HTML (Archivo → Exportar).
+  También puedes abrir un XML generado por nmap en otro lugar (Archivo → Abrir).
 - **Topología** (versión 2): mapa de la red deducido del escaneo, con zonas
   (infraestructura, equipos, IoT, fuera de la red local), colores por riesgo,
   zoom, detalle de cada equipo y exportación a PNG.
 - **Modelo OSI** (versión 2): protocolos y hallazgos de tu red ordenados en las
   7 capas, con explicaciones (modo aprendizaje) y un botón que prepara el escaneo
   recomendado para investigar cada capa.
-
 - **Vigilancia de cambios** (versión 2): cada escaneo se compara con el anterior
   de los mismos objetivos (como `ndiff`): equipos nuevos o que desaparecen, puertos
   que se abren o se cierran y servicios que cambian. El mapa los marca con
@@ -47,7 +47,6 @@ Hay **dos versiones** con las mismas funciones y la misma lógica (`nmap_gui/cor
 > Para un mapa y un análisis más completos, usa el perfil *Escaneo intenso* (`-A`):
 > añade detección de sistema operativo, versiones y `--traceroute`. Los hallazgos
 > son orientativos y se deducen de lo que nmap reporta.
-  También puedes abrir un XML generado por nmap en otro lugar (Archivo → Abrir).
 
 ## Descargar para Windows
 
