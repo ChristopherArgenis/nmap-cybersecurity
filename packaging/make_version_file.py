@@ -4,6 +4,7 @@ Uso: python packaging/make_version_file.py <salida> <nombre> <descripción> <ver
 Así el .exe muestra autor, nombre y versión en Propiedades → Detalles.
 """
 import sys
+from pathlib import Path
 
 out, name, description, version = sys.argv[1:5]
 parts = [int(x) for x in version.split(".")] + [0] * (4 - len(version.split(".")))
@@ -26,6 +27,7 @@ VSVersionInfo(
   ]
 )
 """
+Path(out).parent.mkdir(parents=True, exist_ok=True)
 with open(out, "w", encoding="utf-8") as fh:
     fh.write(text)
 print("versión escrita en", out)
