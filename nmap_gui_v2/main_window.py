@@ -34,10 +34,12 @@ from .icons import icon
 from .core.analysis import Analysis, analyze_scan
 from .core.changes import compare
 from .core.osi import suggested_options
+from .core.report import MAP_IMAGE, ReportMeta, build_report_html
 from .core.webaudit import web_targets
 from .core.webaudit_demo import demo_results
 from .pages.changes_page import ChangesPage
 from .pages.web_page import WebAuditPage
+from .report_pdf import write_pdf
 from .web_runner import WebAuditRunner
 from .pages.history_page import HistoryPage
 from .pages.osi_page import OsiPage
@@ -139,6 +141,13 @@ class ModernWindow(QMainWindow):
             self.nav[key] = btn
             sv.addWidget(btn)
         sv.addStretch(1)
+        self.btn_report = QPushButton("  Reporte PDF")
+        self.btn_report.setObjectName("AccentButton")
+        self.btn_report.setIconSize(QSize(16, 16))
+        self.btn_report.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_report.setToolTip("Genera un informe con resumen, mapa, hallazgos y cambios (Ctrl+P)")
+        sv.addWidget(self.btn_report)
+        sv.addSpacing(10)
         self.side_status = QLabel()
         self.side_status.setObjectName("SidebarFoot")
         self.side_status.setWordWrap(True)
@@ -170,6 +179,7 @@ class ModernWindow(QMainWindow):
         self.setCentralWidget(root)
 
         self.settings_page.nmap_path.setText(self.settings.value("nmap_path", "", str))
+        self.settings_page.author.setText(self.settings.value("report_author", "", str))
         self.settings_page.about.setText(f"NMAP Studio {__version__} · interfaz moderna para nmap")
         self._refresh_nmap_status()
 
@@ -212,6 +222,9 @@ class ModernWindow(QMainWindow):
             page.demo_requested.connect(self.load_demo)
         self.changes_page.compare_requested.connect(self.compare_records)
         self.web_page.audit_requested.connect(self.start_web_audit)
+        self.btn_report.clicked.connect(lambda: self.generate_report())
+        QShortcut(QKeySequence("Ctrl+P"), self, lambda: self.generate_report())
+        self.settings_page.author_changed.connect(lambda name: self.settings.setValue("report_author", name))
         self.web_page.cancel_requested.connect(self.web_runner.cancel)
         self.web_runner.progress.connect(self.web_page.set_progress)
         self.web_runner.finished.connect(self._on_web_finished)
@@ -233,6 +246,7 @@ class ModernWindow(QMainWindow):
         self.scan_page.btn_cancel.setIcon(icon("stop", color(theme, "danger"), 14))
         self.results_page.btn_export.setIcon(icon("export", color(theme, "text"), 16))
         self.results_page.btn_import.setIcon(icon("open", color(theme, "text"), 16))
+        self.btn_report.setIcon(icon("report", color(theme, "accent_text"), 16))
         self.history_page.btn_rerun.setIcon(icon("repeat", color(theme, "text"), 16))
         self.history_page.btn_delete.setIcon(icon("trash", color(theme, "danger"), 16))
         for sw in self.findChildren(ToggleSwitch):
@@ -365,6 +379,44 @@ class ModernWindow(QMainWindow):
         self.osi_page.set_analysis(self.analysis)
         self.changes_page.set_changes(self.analysis.changes)
         self.web_page.set_targets(web_targets(result, self.analysis.extras))
+
+    # ------------------------------------------------------------- reporte
+    def generate_report(self, path: str | None = None) -> str | None:
+        """Crea el reporte PDF del análisis actual. Sin `path`, pregunta dónde guardarlo."""
+        a = self.analysis
+        if a.result is None:
+            QMessageBox.information(self, "Reporte PDF",
+                                    "Primero ejecuta un escaneo, abre uno del historial o carga la red de ejemplo.")
+            return None
+        if path is None:
+            default = time.strftime("informe-red-%Y-%m-%d.pdf")
+            path, _ = QFileDialog.getSaveFileName(self, "Guardar reporte PDF", default, "PDF (*.pdf)")
+            if not path:
+                return None
+            if not path.lower().endswith(".pdf"):
+                path += ".pdf"
+        author = self.settings.value("report_author", "", str)
+        meta = ReportMeta(
+            author=author,
+            scope=self._current.get("targets", "") or a.topology.subnet,
+            command=a.result.command,
+            generated_at=time.time(),
+            demo=self._demo,
+            app_version=__version__,
+        )
+        images = {}
+        snap = self.topology_page.snapshot("claro")
+        if snap is not None:
+            images[MAP_IMAGE] = snap
+        else:
+            meta.include_map = False
+        try:
+            write_pdf(build_report_html(a, self.web_results, meta), path, images, meta.title, author)
+        except OSError as exc:
+            QMessageBox.critical(self, "No se pudo guardar", str(exc))
+            return None
+        self.side_status.setText(f"● Reporte guardado: {Path(path).name}")
+        return path
 
     # ------------------------------------------------------- auditoría web
     def start_web_audit(self) -> None:

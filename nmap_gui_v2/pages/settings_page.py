@@ -14,6 +14,7 @@ class SettingsPage(QWidget):
     browse_requested = Signal()
     nmap_path_changed = Signal(str)
     demo_requested = Signal()
+    author_changed = Signal(str)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -50,6 +51,17 @@ class SettingsPage(QWidget):
         nm.body.addWidget(hint)
         lay.addWidget(nm)
 
+        rep = Card("Reportes")
+        rtxt = QLabel("Nombre que aparecerá como autor en los reportes PDF (opcional).")
+        rtxt.setObjectName("Muted")
+        rtxt.setWordWrap(True)
+        self.author = QLineEdit()
+        self.author.setPlaceholderText("Tu nombre o el de tu equipo")
+        self.author.setAccessibleName("Autor de los reportes")
+        rep.body.addWidget(rtxt)
+        rep.body.addWidget(self.author)
+        lay.addWidget(rep)
+
         demo = Card("Demostración")
         dtxt = QLabel("Carga una red de casa ficticia para recorrer todas las pantallas sin ejecutar "
                       "nmap ni escanear ninguna red.")
@@ -79,4 +91,5 @@ class SettingsPage(QWidget):
         self.dark.toggled.connect(lambda on: self.theme_changed.emit("oscuro" if on else "claro"))
         self.btn_browse.clicked.connect(self.browse_requested)
         self.btn_demo.clicked.connect(self.demo_requested)
+        self.author.editingFinished.connect(lambda: self.author_changed.emit(self.author.text().strip()))
         self.nmap_path.editingFinished.connect(lambda: self.nmap_path_changed.emit(self.nmap_path.text().strip()))

@@ -435,6 +435,27 @@ class TopologyPage(QWidget):
             item.setSelected(True)
             self.view.centerOn(item)
 
+    def snapshot(self, theme: str = "claro", scale: float = 2.0) -> QImage | None:
+        """Imagen del mapa con el tema indicado (el reporte usa el claro, mejor para imprimir)."""
+        if not self.items:
+            return None
+        current = self.theme
+        selected = self._selected.id if self._selected else None
+        self.theme = theme
+        self._render()
+        rect = self.scene.itemsBoundingRect().adjusted(-30, -30, 30, 30)
+        img = QImage(int(rect.width() * scale), int(rect.height() * scale), QImage.Format.Format_ARGB32)
+        img.fill(QColor("#ffffff"))
+        painter = QPainter(img)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.scene.render(painter, QRectF(img.rect()), rect)
+        painter.end()
+        self.theme = current
+        self._render()
+        if selected:
+            self.select(selected)
+        return img
+
     def export_png(self, path: str | None = None) -> str | None:
         if not self.items:
             return None
