@@ -1,0 +1,94 @@
+name: NMAP Studio en un solo .exe
+
+# Compilación aparte: solo la versión 2 (NMAP Studio), en un único .exe que
+# lleva dentro Python, Qt y todas las librerías. Se lanza al cambiar este
+# archivo o a mano desde la pestaña Actions.
+on:
+  push:
+    branches: [claude/awesome-carson-goh3tt, main]
+    paths:
+      - ".github/workflows/build-v2-exe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-v2-exe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install PySide6-Essentials pyinstaller pytest
+
+      - name: Pruebas (sin red)
+        run: pytest -q
+
+      - name: Datos de versión del .exe
+        run: |
+          $v2 = python -c "import nmap_gui_v2; print(nmap_gui_v2.__version__)"
+          python packaging/make_version_file.py build/version_v2.txt NMAP-Studio "NMAP Studio - interfaz grafica para nmap" $v2
+          "V2=$v2" >> $env:GITHUB_ENV
+
+      - name: Compilar NMAP Studio (un solo .exe)
+        run: >
+          pyinstaller --noconfirm --onefile --windowed
+          --name "NMAP-Studio-v${{ env.V2 }}"
+          --icon packaging/icon.ico
+          --version-file build/version_v2.txt
+          --paths .
+          --add-data "nmap_gui_v2/data;nmap_gui_v2/data"
+          packaging/run_v2.py
+
+      - name: Comprobar el .exe
+        run: |
+          $exe = "dist/NMAP-Studio-v$env:V2.exe"
+          # Abre la app sin ventana, carga la red de ejemplo y cierra (no usa nmap ni la red).
+          $p = Start-Process $exe -ArgumentList "--self-test" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "La autoprueba falló con código $($p.ExitCode)" }
+          "Autoprueba correcta"
+          "{0:N1} MB" -f ((Get-Item $exe).Length / 1MB)
+          Get-FileHash $exe -Algorithm SHA256 | ForEach-Object { "{0}  {1}" -f $_.Hash.ToLower(), (Split-Path $_.Path -Leaf) } | Tee-Object dist/SHA256-exe.txt
+
+      - name: Guardar como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: NMAP-Studio-exe
+          path: |
+            dist/*.exe
+            dist/SHA256-exe.txt
+
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nmap-studio-v${{ env.V2 }}-exe-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: NMAP Studio ${{ env.V2 }} · un solo .exe
+          body: |
+            NMAP Studio ${{ env.V2 }} (versión 2: Topología y Modelo OSI) en un único `.exe`.
+            Lleva dentro todo lo necesario; no necesita Python ni instalar nada más.
+
+            Para verla sin escanear nada: **Ajustes → Cargar red de ejemplo**.
+            Para escanear de verdad instala nmap: https://nmap.org/download.html
+
+            El navegador puede pedir **Conservar de todos modos** y Windows mostrar
+            «Windows protegió su PC» (**Más información → Ejecutar de todas formas**):
+            la app no tiene firma digital de pago; su código es abierto en este repositorio.
+          files: |
+            dist/*.exe
+            dist/SHA256-exe.txt
