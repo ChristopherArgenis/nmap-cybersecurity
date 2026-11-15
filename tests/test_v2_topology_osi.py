@@ -211,3 +211,9 @@ def test_demo_mode(tmp_path):
     assert "No se ejecutó nmap" in w._last["text"]
     assert w.history.list() == []  # la demostración no se guarda en el historial
     w.close()
+
+
+def test_self_test_used_by_the_windows_build():
+    from nmap_gui_v2.app import self_test
+
+    assert self_test() == 0

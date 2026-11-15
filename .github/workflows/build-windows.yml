@@ -1,4 +1,4 @@
-name: Compilar .exe para Windows
+name: Compilar para Windows
 
 on:
   push:
@@ -13,9 +13,18 @@ on:
 permissions:
   contents: write
 
+# Si llega un cambio nuevo, se cancela la compilación anterior de la misma rama.
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - uses: actions/checkout@v4
 
@@ -31,54 +40,82 @@ jobs:
       - name: Pruebas (sin red)
         run: pytest -q
 
+      - name: Datos de versión del .exe
+        run: |
+          $v1 = python -c "import nmap_gui; print(nmap_gui.__version__)"
+          $v2 = python -c "import nmap_gui_v2; print(nmap_gui_v2.__version__)"
+          python packaging/make_version_file.py build/version_v1.txt NMAP-GUI "NMAP GUI - interfaz grafica para nmap" $v1
+          python packaging/make_version_file.py build/version_v2.txt NMAP-Studio "NMAP Studio - interfaz grafica para nmap" $v2
+          "V1=$v1" >> $env:GITHUB_ENV
+          "V2=$v2" >> $env:GITHUB_ENV
+
+      # Carpeta en vez de un solo .exe: los .exe "de un archivo" se descomprimen
+      # solos al abrir y los antivirus los marcan por error con más frecuencia.
       - name: Compilar versión 1 (clásica)
         run: >
-          pyinstaller --noconfirm --onefile --windowed
-          --name "NMAP-GUI-v1"
+          pyinstaller --noconfirm --onedir --windowed
+          --name "NMAP-GUI"
           --icon packaging/icon.ico
+          --version-file build/version_v1.txt
           --paths .
           packaging/run_v1.py
 
-      - name: Compilar versión 2 (moderna)
-        if: hashFiles('packaging/run_v2.py') != ''
+      - name: Compilar versión 2 (NMAP Studio)
         run: >
-          pyinstaller --noconfirm --onefile --windowed
-          --name "NMAP-GUI-v2"
+          pyinstaller --noconfirm --onedir --windowed
+          --name "NMAP-Studio"
           --icon packaging/icon.ico
+          --version-file build/version_v2.txt
           --paths .
           --add-data "nmap_gui_v2/data;nmap_gui_v2/data"
           packaging/run_v2.py
 
-      - name: Comprobar que la red de ejemplo va dentro del .exe
-        if: hashFiles('packaging/run_v2.py') != ''
-        run: >
-          python -c "from PyInstaller.archive.readers import CArchiveReader as R;
-          toc = R('dist/NMAP-GUI-v2.exe').toc;
-          assert any('red_ejemplo' in str(n) for n in toc), 'falta la red de ejemplo';
-          print('red de ejemplo incluida')"
+      - name: Comprobar el .exe de la versión 2
+        run: |
+          if (-not (Test-Path dist/NMAP-Studio/_internal/nmap_gui_v2/data/red_ejemplo.xml)) {
+            throw "Falta la red de ejemplo dentro de la app"
+          }
+          # Abre la app sin ventana, carga la red de ejemplo y cierra (no usa nmap ni la red).
+          $p = Start-Process dist/NMAP-Studio/NMAP-Studio.exe -ArgumentList "--self-test" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "La autoprueba falló con código $($p.ExitCode)" }
+          "Autoprueba correcta"
+
+      - name: Empaquetar en .zip
+        run: |
+          Copy-Item packaging/LEEME-windows.txt dist/NMAP-GUI/LEEME.txt
+          Copy-Item packaging/LEEME-windows.txt dist/NMAP-Studio/LEEME.txt
+          Compress-Archive -Path dist/NMAP-GUI -DestinationPath "dist/NMAP-GUI-v$env:V1-windows.zip"
+          Compress-Archive -Path dist/NMAP-Studio -DestinationPath "dist/NMAP-Studio-v$env:V2-windows.zip"
+          Get-ChildItem dist/*.zip | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+          Get-FileHash dist/*.zip -Algorithm SHA256 | ForEach-Object { "{0}  {1}" -f $_.Hash.ToLower(), (Split-Path $_.Path -Leaf) } | Tee-Object dist/SHA256.txt
 
       - name: Guardar como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: NMAP-GUI-windows
-          path: dist/*.exe
+          name: NMAP-windows
+          path: |
+            dist/*.zip
+            dist/SHA256.txt
 
       - name: Publicar en Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
-          name: NMAP GUI para Windows (compilación ${{ github.run_number }})
+          name: NMAP Studio ${{ env.V2 }} para Windows (compilación ${{ github.run_number }})
           body: |
-            Descarga el .exe y ábrelo con doble clic. No necesita Python.
+            Descarga el .zip, descomprímelo y abre el .exe de la carpeta. No necesita Python.
 
-            **Requisito:** instalar nmap para Windows desde https://nmap.org/download.html
-            (el instalador incluye Npcap). La app detecta nmap automáticamente.
+            - `NMAP-Studio-v${{ env.V2 }}-windows.zip`: versión moderna con Topología y Modelo OSI.
+              Incluye una red de ejemplo (Ajustes → Cargar red de ejemplo) para verla sin escanear nada.
+            - `NMAP-GUI-v${{ env.V1 }}-windows.zip`: versión clásica.
+            - `SHA256.txt`: huellas para comprobar que la descarga no se alteró.
 
-            - `NMAP-GUI-v1.exe`: versión clásica.
-            - `NMAP-GUI-v2.exe`: versión moderna con Topología y Modelo OSI. Incluye una
-              red de ejemplo (Ajustes → Cargar red de ejemplo) para verla sin escanear nada.
+            **Antes de descomprimir:** clic derecho en el .zip → Propiedades → marca «Desbloquear».
+            Si Windows muestra «Windows protegió su PC», pulsa **Más información → Ejecutar de todas formas**:
+            la app no tiene firma digital de pago, pero su código es abierto en este repositorio.
 
-            Windows puede mostrar "Windows protegió su PC" porque el .exe no está firmado:
-            pulsa **Más información → Ejecutar de todas formas**.
-          files: dist/*.exe
+            Para escanear de verdad instala nmap: https://nmap.org/download.html
+          files: |
+            dist/*.zip
+            dist/SHA256.txt
