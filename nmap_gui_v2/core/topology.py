@@ -102,6 +102,7 @@ class Node:
     risk: str = ""  # peor severidad de sus hallazgos, o ""
     findings: int = 0
     host: Host | None = None
+    change: str = ""  # "nuevo", "+2 puertos"… respecto al escaneo anterior
 
     @property
     def kind_label(self) -> str:

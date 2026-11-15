@@ -32,7 +32,9 @@ from nmap_gui.core.scanner import ScanRunner, find_nmap, is_admin
 from . import __version__
 from .icons import icon
 from .core.analysis import Analysis, analyze_scan
+from .core.changes import compare
 from .core.osi import suggested_options
+from .pages.changes_page import ChangesPage
 from .pages.history_page import HistoryPage
 from .pages.osi_page import OsiPage
 from .pages.results_page import ResultsPage
@@ -43,6 +45,7 @@ from .theme import color, stylesheet
 from .widgets import ToggleSwitch
 
 DEMO_XML = Path(__file__).parent / "data" / "red_ejemplo.xml"
+DEMO_PREVIOUS_XML = Path(__file__).parent / "data" / "red_ejemplo_anterior.xml"
 
 DISCLAIMER = (
     "NMAP Studio ejecuta nmap, un escáner de redes.\n\n"
@@ -56,6 +59,7 @@ NAV = [
     ("results", "Resultados", "results"),
     ("topology", "Topología", "topology"),
     ("osi", "Modelo OSI", "layers"),
+    ("changes", "Cambios", "diff"),
     ("history", "Historial", "history"),
     ("settings", "Ajustes", "settings"),
 ]
@@ -82,6 +86,7 @@ class ModernWindow(QMainWindow):
         self._build()
         self._connect()
         self.apply_theme(self.theme)
+        self.changes_page.set_history(self.history.list())
         self.go("scan")
 
     # ------------------------------------------------------------------ UI
@@ -136,6 +141,7 @@ class ModernWindow(QMainWindow):
         self.results_page = ResultsPage(self.theme)
         self.topology_page = TopologyPage(self.theme)
         self.osi_page = OsiPage(self.theme)
+        self.changes_page = ChangesPage(self.theme)
         self.history_page = HistoryPage(self.history)
         self.settings_page = SettingsPage()
         self.pages = {
@@ -143,6 +149,7 @@ class ModernWindow(QMainWindow):
             "results": self.results_page,
             "topology": self.topology_page,
             "osi": self.osi_page,
+            "changes": self.changes_page,
             "history": self.history_page,
             "settings": self.settings_page,
         }
@@ -189,8 +196,10 @@ class ModernWindow(QMainWindow):
         self.topology_page.scan_host.connect(self._scan_host)
         self.topology_page.show_osi.connect(self._osi_for_host)
         self.osi_page.investigate.connect(self._investigate_layer)
-        for page in (self.results_page, self.topology_page, self.osi_page, self.settings_page):
+        for page in (self.results_page, self.topology_page, self.osi_page, self.changes_page,
+                     self.settings_page):
             page.demo_requested.connect(self.load_demo)
+        self.changes_page.compare_requested.connect(self.compare_records)
         QShortcut(QKeySequence("Ctrl+E"), self, self.export)
 
     def go(self, key: str) -> None:
@@ -216,6 +225,7 @@ class ModernWindow(QMainWindow):
         self.results_page.apply_theme(theme)
         self.topology_page.apply_theme(theme)
         self.osi_page.apply_theme(theme)
+        self.changes_page.apply_theme(theme)
         st = self.settings_page.dark
         st.blockSignals(True)
         st.setChecked(theme == "oscuro")
@@ -291,7 +301,8 @@ class ModernWindow(QMainWindow):
         self._refresh_nmap_status()
         full_text = f"$ {self._current.get('command', '')}\n\n{text}"
         self._last = {"result": result, "text": full_text, "xml": xml}
-        self.show_result(result, xml)
+        prev = self._previous_record(self._current.get("targets", ""))
+        self.show_result(result, xml, *self._prev_args(prev), "Este escaneo")
         open_ports = sum(len(h.open_ports) for h in result.hosts) if result else 0
         if self._current:
             self.history.add(
@@ -299,7 +310,10 @@ class ModernWindow(QMainWindow):
                 command=self._current["command"], exit_code=code, duration=elapsed,
                 hosts_up=result.hosts_up if result else 0, open_ports=open_ports, output=full_text, xml=xml,
             )
-            self.history_page.reload()
+            self._reload_history()
+            if not self.analysis.changes.empty:
+                n = len(self.analysis.changes.changes)
+                self.side_status.setText(f"● {n} cambio{'s' if n != 1 else ''} desde el escaneo anterior")
         if code == -1:
             sp.finish("Cancelado")
         elif code != 0:
@@ -316,12 +330,56 @@ class ModernWindow(QMainWindow):
                 self.go("results")
 
     # --------------------------------------------- topología y modelo OSI
-    def show_result(self, result: ScanResult | None, xml: str) -> None:
-        """Muestra un resultado en Resultados, Topología y Modelo OSI."""
+    def show_result(
+        self,
+        result: ScanResult | None,
+        xml: str,
+        previous: ScanResult | None = None,
+        previous_label: str = "Escaneo anterior",
+        current_label: str = "Escaneo actual",
+    ) -> None:
+        """Muestra un resultado en Resultados, Topología, Modelo OSI y Cambios."""
         self.results_page.set_result(result, exportable=True)
-        self.analysis = analyze_scan(result, xml)
+        self.analysis = analyze_scan(result, xml, previous, previous_label, current_label)
         self.topology_page.set_analysis(self.analysis)
         self.osi_page.set_analysis(self.analysis)
+        self.changes_page.set_changes(self.analysis.changes)
+
+    # ------------------------------------------------- vigilancia de cambios
+    def _previous_record(self, targets: str, before: float | None = None):
+        """El escaneo más reciente de los mismos objetivos (anterior a `before`)."""
+        if not targets:
+            return None
+        for rec in self.history.list():
+            if rec.targets == targets and (before is None or rec.started_at < before):
+                return self.history.get(rec.id)
+        return None
+
+    @staticmethod
+    def _parse(xml: str) -> ScanResult | None:
+        try:
+            return parse_xml(xml) if xml.strip() else None
+        except ValueError:
+            return None
+
+    def _prev_args(self, rec) -> tuple:
+        if rec is None:
+            return (None, "Escaneo anterior")
+        return (self._parse(rec.xml), f"Escaneo del {rec.started_text}")
+
+    def compare_records(self, before_id: int, after_id: int) -> None:
+        a, b = self.history.get(before_id), self.history.get(after_id)
+        if a is None or b is None:
+            return
+        if a.started_at > b.started_at:
+            a, b = b, a
+        cs = compare(self._parse(a.xml), self._parse(b.xml),
+                     f"{a.started_text} · {a.targets}", f"{b.started_text} · {b.targets}")
+        self.changes_page.set_changes(cs)
+
+    def _reload_history(self) -> None:
+        self.history_page.reload()
+        self.changes_page.set_history(self.history.list())
 
     def load_demo(self) -> None:
         """Carga la red de ejemplo incluida en la app (datos ficticios, no escanea nada)."""
@@ -331,7 +389,8 @@ class ModernWindow(QMainWindow):
                 "No se ejecutó nmap ni se escaneó ninguna red.]\n")
         self._last = {"result": result, "text": text, "xml": xml}
         self._current = {"targets": "192.168.1.0/24"}
-        self.show_result(result, xml)
+        previous = parse_xml(DEMO_PREVIOUS_XML.read_text(encoding="utf-8"))
+        self.show_result(result, xml, previous, "Red de ejemplo · hace una semana", "Red de ejemplo · hoy")
         self.scan_page.console.setPlainText(text)
         self.side_status.setText("● Viendo la red de ejemplo")
         self.go("topology")
@@ -364,7 +423,8 @@ class ModernWindow(QMainWindow):
             except ValueError:
                 result = None
         self._last = {"result": result, "text": rec.output, "xml": rec.xml}
-        self.show_result(result, rec.xml)
+        prev = self._previous_record(rec.targets, before=rec.started_at)
+        self.show_result(result, rec.xml, *self._prev_args(prev), f"Escaneo del {rec.started_text}")
         self.scan_page.console.setPlainText(rec.output)
         self.go("results")
 
@@ -379,13 +439,13 @@ class ModernWindow(QMainWindow):
 
     def _delete_record(self, scan_id: int) -> None:
         self.history.delete(scan_id)
-        self.history_page.reload()
+        self._reload_history()
 
     def _clear_history(self) -> None:
         if QMessageBox.question(self, "Vaciar historial", "¿Eliminar todos los escaneos guardados?") \
                 == QMessageBox.StandardButton.Yes:
             self.history.clear()
-            self.history_page.reload()
+            self._reload_history()
 
     # --------------------------------------------------- importar/exportar
     def import_xml(self) -> None:

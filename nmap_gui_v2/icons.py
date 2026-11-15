@@ -28,6 +28,9 @@ _PATHS = {
     "layers": "<path d='M12 3l9 5-9 5-9-5z'/><path d='M3 13l9 5 9-5'/><path d='M3 17.5l9 5 9-5' opacity='.5'/>",
     "fit": "<path d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'/>",
     "image": "<rect x='3' y='4' width='18' height='16' rx='2'/><circle cx='9' cy='10' r='2'/><path d='M21 17l-5-5-8 8'/>",
+    "diff": "<path d='M7 4v12'/><path d='M3 12l4 4 4-4'/><path d='M17 20V8'/><path d='M13 12l4-4 4 4'/>",
+    "web": "<circle cx='12' cy='12' r='9'/><path d='M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'/>",
+    "report": "<path d='M6 3h9l4 4v14H6z'/><path d='M14 3v5h5M9 13h7M9 17h5'/>",
     "host": "<rect x='3' y='4' width='18' height='12' rx='2'/><path d='M8 20h8M12 16v4'/>",
 }
 

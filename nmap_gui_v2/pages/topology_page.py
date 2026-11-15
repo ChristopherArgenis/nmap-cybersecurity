@@ -44,7 +44,7 @@ class NodeItem(QGraphicsObject):
         self.setToolTip(f"{node.kind_label}\n{node.sublabel}".strip())
 
     def boundingRect(self) -> QRectF:  # noqa: N802
-        return QRectF(-NODE_W / 2 - 4, -NODE_H / 2 - 4, NODE_W + 8, NODE_H + 8)
+        return QRectF(-NODE_W / 2 - 4, -NODE_H / 2 - 14, NODE_W + 8, NODE_H + 18)
 
     def paint(self, painter: QPainter, _option, _widget=None) -> None:
         c = self.colors
@@ -101,6 +101,22 @@ class NodeItem(QGraphicsObject):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(c[RISK_COLOR_KEY[self.node.risk]]))
             painter.drawEllipse(QRectF(NODE_W / 2 - 18, -NODE_H / 2 + 9, 8, 8))
+
+        if self.node.change:
+            # Etiqueta sobre el borde superior: "NUEVO" o "+1 PUERTO".
+            text = self.node.change.upper()
+            f = QFont(painter.font())
+            f.setFamilies([QFont().family()])
+            f.setPointSizeF(7)
+            f.setBold(True)
+            painter.setFont(f)
+            w = painter.fontMetrics().horizontalAdvance(text) + 14
+            pill = QRectF(NODE_W / 2 - w - 10, -NODE_H / 2 - 9, w, 17)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(c["info"]))
+            painter.drawRoundedRect(pill, 8.5, 8.5)
+            painter.setPen(QColor("#04121c"))
+            painter.drawText(pill, Qt.AlignmentFlag.AlignCenter, text)
 
 
 class MapView(QGraphicsView):
@@ -246,6 +262,14 @@ class TopologyPage(QWidget):
         self.d_findings.setSpacing(8)
         card.body.addLayout(self.d_findings)
 
+        self.d_change_label = QLabel("CAMBIOS DESDE EL ESCANEO ANTERIOR")
+        self.d_change_label.setObjectName("SectionLabel")
+        self.d_change_label.setWordWrap(True)
+        card.body.addWidget(self.d_change_label)
+        self.d_changes = QVBoxLayout()
+        self.d_changes.setSpacing(6)
+        card.body.addLayout(self.d_changes)
+
         self.btn_scan = QPushButton("Escanear este equipo")
         self.btn_scan.setObjectName("AccentButton")
         self.btn_osi = QPushButton("Ver por capas OSI")
@@ -264,6 +288,8 @@ class TopologyPage(QWidget):
             self.d_grid.itemAt(i).widget().setVisible(has)
         self.d_ports.clear()
         _clear(self.d_findings)
+        _clear(self.d_changes)
+        self.d_change_label.setVisible(False)
         if node is None:
             self.d_kind.setText("")
             self.d_title.setText("Selecciona un equipo")
@@ -299,6 +325,15 @@ class TopologyPage(QWidget):
             self.d_findings.addWidget(box)
         if not mine:
             self.d_findings.addWidget(QLabel("Sin hallazgos en este equipo."))
+        changes = self.analysis.changes.for_host(h.address)
+        self.d_change_label.setVisible(bool(changes))
+        for ch in changes:
+            lbl = QLabel(f"<b>{ch.label}</b> {ch.port}<br>{ch.detail}")
+            lbl.setObjectName("Inset")
+            lbl.setWordWrap(True)
+            lbl.setContentsMargins(10, 8, 10, 8)
+            lbl.setStyleSheet(f"#Inset {{ border-left: 3px solid {THEMES[self.theme]['info']}; }}")
+            self.d_changes.addWidget(lbl)
 
     # --------------------------------------------------------------- mapa
     def set_analysis(self, analysis: Analysis) -> None:
@@ -370,9 +405,11 @@ class TopologyPage(QWidget):
 
         hosts = [n for n in topo.nodes if n.host]
         risky = sum(1 for n in hosts if n.risk)
+        changed = sum(1 for n in hosts if n.change)
         subnet = f" · red {topo.subnet}" if topo.subnet else ""
+        news = f" · {changed} con cambios (etiqueta azul)" if changed else ""
         self.legend.setText(
-            f"{len(hosts)} equipos{subnet} · {risky} con hallazgos.  "
+            f"{len(hosts)} equipos{subnet} · {risky} con hallazgos{news}.  "
             "Borde rojo: alto o crítico · ámbar: medio · azul: bajo · punteado: deducido, no escaneado"
         )
         self._apply_filter()
